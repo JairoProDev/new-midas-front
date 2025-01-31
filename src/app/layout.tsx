@@ -1,15 +1,11 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { Toaster } from "react-hot-toast";
+'use client';
 
-const inter = Inter({ subsets: ["latin"] });
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { Toaster } from 'react-hot-toast';
 
-export const metadata: Metadata = {
-  title: "Authentication System",
-  description: "A complete authentication system with email verification",
-};
+const inter = Inter({ subsets: ['latin'] });
 
 export default function RootLayout({
   children,
