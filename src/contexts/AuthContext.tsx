@@ -21,6 +21,40 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
+// Add response interceptor to handle 401 errors
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If the error is 401 and we haven't tried to refresh the token yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to refresh the token
+        const refreshResponse = await axiosInstance.post('/auth/refresh');
+        const { token } = refreshResponse.data;
+        
+        // Update the token in localStorage
+        localStorage.setItem('token', token);
+        
+        // Update the Authorization header
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        
+        // Retry the original request
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        // If refresh token fails, only then logout
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+        return Promise.reject(refreshError);
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 interface User {
   id: string;
   email: string;
@@ -28,6 +62,11 @@ interface User {
   lastName: string | null;
   role: 'EMPLOYEE' | 'ADMIN';
   company: string | null;
+  preferences?: {
+    notifications: boolean;
+    theme: string;
+    language: string;
+  };
 }
 
 interface AuthContextType {
@@ -46,6 +85,7 @@ interface AuthContextType {
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
   refreshUser: () => Promise<void>;
+  updateUserPreferences: (preferences: Partial<User['preferences']>) => Promise<void>;
 }
 
 // Export the context so it can be imported in useAuth
@@ -61,13 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const token = localStorage.getItem('token');
       if (!token) {
         setUser(null);
+        setIsLoading(false);
         return;
       }
       
       const response = await axiosInstance.get('/auth/me');
       setUser(response.data);
     } catch (error) {
-      localStorage.removeItem('token');
+      // Don't remove token here, let the interceptor handle 401s
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -80,6 +121,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshUser = async () => {
     await checkAuth();
+  };
+
+  const updateUserPreferences = async (preferences: Partial<User['preferences']>) => {
+    try {
+      const response = await axiosInstance.patch('/auth/preferences', { preferences });
+      setUser(response.data);
+      toast.success('Preferences updated successfully');
+    } catch (error) {
+      toast.error('Failed to update preferences');
+      throw error;
+    }
   };
 
   const login = async (email: string, password: string) => {
@@ -115,15 +167,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      // Clear token and user data regardless of API call success
+      // Try to call logout endpoint first
+      await axiosInstance.post('/auth/logout');
+      
+      // Then clear local state
       localStorage.removeItem('token');
       setUser(null);
-      
-      // Try to call logout endpoint, but don't wait for it
-      await axiosInstance.post('/auth/logout').catch(() => {
-        // Ignore error if endpoint doesn't exist
-      });
-      
       toast.success('Logged out successfully');
       router.push('/login');
     } catch (error) {
@@ -183,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         resetPassword,
         verifyEmail,
         refreshUser,
+        updateUserPreferences,
       }}
     >
       {children}
