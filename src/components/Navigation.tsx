@@ -37,7 +37,7 @@ export const Navigation: React.FC = () => {
   ];
 
   return (
-    <Disclosure as="nav" className="bg-white shadow">
+    <Disclosure as="nav" className="bg-primary-600 shadow-soft-lg">
       {({ open }) => (
         <>
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -45,13 +45,9 @@ export const Navigation: React.FC = () => {
               <div className="flex">
                 <div className="flex flex-shrink-0 items-center">
                   <Link href="/dashboard">
-                    <Image
-                      width={32}
-                      height={32}
-                      className="h-8 w-auto"
-                      src="/logo.png"
-                      alt="Midas"
-                    />
+                    <div className="h-8 w-8 rounded-full bg-white flex items-center justify-center">
+                      <span className="text-primary-600 text-lg font-bold">M</span>
+                    </div>
                   </Link>
                 </div>
                 <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -63,9 +59,9 @@ export const Navigation: React.FC = () => {
                         href={item.href}
                         className={classNames(
                           isActive
-                            ? 'border-indigo-500 text-gray-900'
-                            : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700',
-                          'inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium',
+                            ? 'border-white text-white'
+                            : 'border-transparent text-primary-100 hover:border-primary-100 hover:text-white',
+                          'inline-flex items-center border-b-2 px-1 pt-1 text-sm font-medium transition-colors duration-200',
                         )}
                       >
                         {item.name}
@@ -75,13 +71,12 @@ export const Navigation: React.FC = () => {
                 </div>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                {/* Profile dropdown */}
                 <Menu as="div" className="relative ml-3">
                   <div>
-                    <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                    <Menu.Button className="flex rounded-full bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2">
                       <span className="sr-only">Open user menu</span>
-                      <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                        <span className="text-indigo-800 font-medium">
+                      <div className="h-8 w-8 rounded-full bg-primary-100 flex items-center justify-center">
+                        <span className="text-primary-600 font-medium">
                           {user?.firstName?.[0]}
                           {user?.lastName?.[0]}
                         </span>
@@ -97,7 +92,7 @@ export const Navigation: React.FC = () => {
                     leaveFrom="transform opacity-100 scale-100"
                     leaveTo="transform opacity-0 scale-95"
                   >
-                    <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                    <Menu.Items className="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-lg bg-white py-1 shadow-soft-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                       {userNavigation.map((item) => (
                         <Menu.Item key={item.name}>
                           {({ active }) => (
@@ -105,8 +100,8 @@ export const Navigation: React.FC = () => {
                               href={item.href}
                               onClick={item.onClick}
                               className={classNames(
-                                active ? 'bg-gray-100' : '',
-                                'block px-4 py-2 text-sm text-gray-700',
+                                active ? 'bg-primary-50' : '',
+                                'block px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 transition-colors duration-200',
                               )}
                             >
                               {item.name}
@@ -119,8 +114,7 @@ export const Navigation: React.FC = () => {
                 </Menu>
               </div>
               <div className="-mr-2 flex items-center sm:hidden">
-                {/* Mobile menu button */}
-                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500">
+                <Disclosure.Button className="inline-flex items-center justify-center rounded-md p-2 text-primary-100 hover:bg-primary-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white">
                   <span className="sr-only">Open main menu</span>
                   {open ? (
                     <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
@@ -143,9 +137,9 @@ export const Navigation: React.FC = () => {
                     href={item.href}
                     className={classNames(
                       isActive
-                        ? 'border-indigo-500 bg-indigo-50 text-indigo-700'
-                        : 'border-transparent text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800',
-                      'block border-l-4 py-2 pl-3 pr-4 text-base font-medium',
+                        ? 'bg-primary-700 text-white'
+                        : 'text-primary-100 hover:bg-primary-700 hover:text-white',
+                      'block py-2 pl-3 pr-4 text-base font-medium transition-colors duration-200',
                     )}
                   >
                     {item.name}
@@ -153,21 +147,21 @@ export const Navigation: React.FC = () => {
                 );
               })}
             </div>
-            <div className="border-t border-gray-200 pb-3 pt-4">
+            <div className="border-t border-primary-700 pb-3 pt-4">
               <div className="flex items-center px-4">
                 <div className="flex-shrink-0">
-                  <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                    <span className="text-indigo-800 font-medium">
+                  <div className="h-10 w-10 rounded-full bg-primary-100 flex items-center justify-center">
+                    <span className="text-primary-600 font-medium">
                       {user?.firstName?.[0]}
                       {user?.lastName?.[0]}
                     </span>
                   </div>
                 </div>
                 <div className="ml-3">
-                  <div className="text-base font-medium text-gray-800">
+                  <div className="text-base font-medium text-white">
                     {user?.firstName} {user?.lastName}
                   </div>
-                  <div className="text-sm font-medium text-gray-500">
+                  <div className="text-sm font-medium text-primary-100">
                     {user?.email}
                   </div>
                 </div>
@@ -179,7 +173,7 @@ export const Navigation: React.FC = () => {
                     as={Link}
                     href={item.href}
                     onClick={item.onClick}
-                    className="block px-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800"
+                    className="block px-4 py-2 text-base font-medium text-primary-100 hover:bg-primary-700 hover:text-white transition-colors duration-200"
                   >
                     {item.name}
                   </Disclosure.Button>
