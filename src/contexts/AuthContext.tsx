@@ -2,8 +2,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
 
 interface User {
   id: string;
@@ -29,17 +30,16 @@ interface AuthContextType {
   forgotPassword: (email: string) => Promise<void>;
   resetPassword: (token: string, password: string) => Promise<void>;
   verifyEmail: (token: string) => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Export the context so it can be imported in useAuth
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
+  const router = useRouter();
 
   const checkAuth = async () => {
     try {
@@ -54,6 +54,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const refreshUser = async () => {
+    await checkAuth();
+  };
+
   const login = async (email: string, password: string) => {
     try {
       const response = await axios.post(
@@ -63,6 +71,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       setUser(response.data.user);
       toast.success('Logged in successfully');
+      router.push('/dashboard');
     } catch (error) {
       toast.error('Invalid credentials');
       throw error;
@@ -79,6 +88,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await axios.post(`${API_URL}/auth/register`, data);
       toast.success('Registration successful. Please verify your email.');
+      router.push('/login');
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Registration failed');
       throw error;
@@ -94,6 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       setUser(null);
       toast.success('Logged out successfully');
+      router.push('/login');
     } catch (error) {
       toast.error('Logout failed');
       throw error;
@@ -104,6 +115,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await axios.post(`${API_URL}/auth/forgot-password`, { email });
       toast.success('Password reset instructions sent to your email');
+      router.push('/login');
     } catch (error) {
       toast.error('Failed to send reset instructions');
       throw error;
@@ -117,6 +129,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         password,
       });
       toast.success('Password reset successful');
+      router.push('/login');
     } catch (error) {
       toast.error('Failed to reset password');
       throw error;
@@ -128,6 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await axios.post(`${API_URL}/auth/verify-email`, { token });
       toast.success('Email verified successfully');
       await checkAuth();
+      router.push('/login');
     } catch (error) {
       toast.error('Failed to verify email');
       throw error;
@@ -145,6 +159,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         forgotPassword,
         resetPassword,
         verifyEmail,
+        refreshUser,
       }}
     >
       {children}

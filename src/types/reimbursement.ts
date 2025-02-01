@@ -7,8 +7,11 @@ export enum ReimbursementStatus {
 export enum ExpenseCategory {
   TRAVEL = 'TRAVEL',
   MEALS = 'MEALS',
-  OFFICE_SUPPLIES = 'OFFICE_SUPPLIES',
+  SUPPLIES = 'SUPPLIES',
   EQUIPMENT = 'EQUIPMENT',
+  SOFTWARE = 'SOFTWARE',
+  TRAINING = 'TRAINING',
+  CONFERENCE = 'CONFERENCE',
   OTHER = 'OTHER',
 }
 
@@ -23,15 +26,20 @@ export interface User {
 
 export interface ReimbursementRequest {
   id: string;
+  userId: string;
   amount: number;
   category: ExpenseCategory;
   description: string;
   receiptUrl: string;
   status: ReimbursementStatus;
   feedback?: string;
-  submittedAt: string;
+  createdAt: string;
   updatedAt: string;
-  submittedBy: User;
-  approvedBy?: User;
-  approvedAt?: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    company?: string;
+  };
 } 

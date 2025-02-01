@@ -3,9 +3,9 @@ import {
   ReimbursementRequest,
   ExpenseCategory,
   ReimbursementStatus,
-} from '../types/reimbursement';
+} from '@/types/reimbursement';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
 
 export const reimbursementService = {
   async createRequest(data: {
