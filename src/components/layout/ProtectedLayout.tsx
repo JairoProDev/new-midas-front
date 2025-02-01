@@ -1,6 +1,8 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth } from '@/hooks/useAuth';
 import { Navigation } from './Navigation';
 
 interface Props {
@@ -26,18 +28,22 @@ export const ProtectedLayout: React.FC<Props> = ({
     }
   }, [user, isLoading, router, requireAdmin]);
 
-  if (isLoading || !user || (requireAdmin && user.role !== 'ADMIN')) {
+  if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
       </div>
     );
   }
 
+  if (!user || (requireAdmin && user.role !== 'ADMIN')) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-background-cream">
       <Navigation />
-      <main>{children}</main>
+      <main className="container mx-auto px-4 py-8">{children}</main>
     </div>
   );
 }; 

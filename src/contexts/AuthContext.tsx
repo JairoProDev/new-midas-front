@@ -6,6 +6,21 @@ import { useRouter } from 'next/navigation';
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
 
+// Create axios instance with default config
+const axiosInstance = axios.create({
+  baseURL: API_URL,
+  withCredentials: true,
+});
+
+// Add request interceptor to add auth token
+axiosInstance.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 interface User {
   id: string;
   email: string;
@@ -43,11 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     try {
-      const response = await axios.get(`${API_URL}/auth/me`, {
-        withCredentials: true,
-      });
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setUser(null);
+        return;
+      }
+      
+      const response = await axiosInstance.get('/auth/me');
       setUser(response.data);
     } catch (error) {
+      localStorage.removeItem('token');
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -64,12 +84,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post(
-        `${API_URL}/auth/login`,
-        { email, password },
-        { withCredentials: true },
-      );
-      setUser(response.data.user);
+      const response = await axiosInstance.post('/auth/login', { email, password });
+      const { token, user: userData } = response.data;
+      localStorage.setItem('token', token);
+      setUser(userData);
       toast.success('Logged in successfully');
       router.push('/dashboard');
     } catch (error) {
@@ -86,7 +104,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     company?: string;
   }) => {
     try {
-      await axios.post(`${API_URL}/auth/register`, data);
+      await axiosInstance.post('/auth/register', data);
       toast.success('Registration successful. Please verify your email.');
       router.push('/login');
     } catch (error: any) {
@@ -97,23 +115,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
-      await axios.post(
-        `${API_URL}/auth/logout`,
-        {},
-        { withCredentials: true },
-      );
+      // Clear token and user data regardless of API call success
+      localStorage.removeItem('token');
       setUser(null);
+      
+      // Try to call logout endpoint, but don't wait for it
+      await axiosInstance.post('/auth/logout').catch(() => {
+        // Ignore error if endpoint doesn't exist
+      });
+      
       toast.success('Logged out successfully');
       router.push('/login');
     } catch (error) {
-      toast.error('Logout failed');
-      throw error;
+      // Even if there's an error, we still want to clear local state
+      localStorage.removeItem('token');
+      setUser(null);
+      router.push('/login');
     }
   };
 
   const forgotPassword = async (email: string) => {
     try {
-      await axios.post(`${API_URL}/auth/forgot-password`, { email });
+      await axiosInstance.post('/auth/forgot-password', { email });
       toast.success('Password reset instructions sent to your email');
       router.push('/login');
     } catch (error) {
@@ -124,7 +147,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (token: string, password: string) => {
     try {
-      await axios.post(`${API_URL}/auth/reset-password`, {
+      await axiosInstance.post('/auth/reset-password', {
         token,
         password,
       });
@@ -138,7 +161,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const verifyEmail = async (token: string) => {
     try {
-      await axios.post(`${API_URL}/auth/verify-email`, { token });
+      await axiosInstance.post('/auth/verify-email', { token });
       toast.success('Email verified successfully');
       await checkAuth();
       router.push('/login');
