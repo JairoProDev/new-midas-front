@@ -4,6 +4,7 @@ import {
   ExpenseCategory,
   ReimbursementStatus,
 } from '@/types/reimbursement';
+import { uploadService } from './upload.service';
 
 const API_URL = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/api`;
 
@@ -57,27 +58,15 @@ axiosInstance.interceptors.response.use(
 );
 
 export const reimbursementService = {
-  async uploadReceipt(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append('receipt', file);
-
-    const response = await axiosInstance.post('/uploads/receipt', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
-
-    return response.data.url;
-  },
-
   async createRequest(data: {
     amount: number;
     category: ExpenseCategory;
     description: string;
     receipt: File;
+    currency?: string;
   }): Promise<ReimbursementRequest> {
     // First upload the receipt
-    const receiptUrl = await this.uploadReceipt(data.receipt);
+    const receiptUrl = await uploadService.uploadFile(data.receipt, 'receipt');
 
     // Then create the reimbursement request
     const response = await axiosInstance.post('/reimbursements', {
@@ -93,6 +82,7 @@ export const reimbursementService = {
     category?: ExpenseCategory;
     startDate?: Date;
     endDate?: Date;
+    currency?: string;
   }): Promise<ReimbursementRequest[]> {
     const response = await axiosInstance.get('/reimbursements/me', {
       params: filters,
@@ -106,6 +96,8 @@ export const reimbursementService = {
     startDate?: Date;
     endDate?: Date;
     userId?: string;
+    teamId?: string;
+    currency?: string;
   }): Promise<ReimbursementRequest[]> {
     const response = await axiosInstance.get('/reimbursements/all', {
       params: filters,
@@ -120,7 +112,12 @@ export const reimbursementService = {
 
   async updateRequestStatus(
     id: string,
-    data: { status: ReimbursementStatus; feedback?: string },
+    data: { 
+      status: ReimbursementStatus; 
+      feedback?: string;
+      processedBy?: string;
+      processedAt?: Date;
+    },
   ): Promise<ReimbursementRequest> {
     const response = await axiosInstance.put(
       `/reimbursements/${id}/status`,
@@ -129,10 +126,38 @@ export const reimbursementService = {
     return response.data;
   },
 
+  async addComment(
+    id: string,
+    data: { 
+      comment: string;
+      attachments?: File[];
+    },
+  ): Promise<ReimbursementRequest> {
+    let attachmentUrls: string[] = [];
+    
+    if (data.attachments?.length) {
+      attachmentUrls = await Promise.all(
+        data.attachments.map(file => uploadService.uploadFile(file, 'receipt'))
+      );
+    }
+
+    const response = await axiosInstance.post(
+      `/reimbursements/${id}/comments`,
+      {
+        comment: data.comment,
+        attachmentUrls,
+      },
+    );
+
+    return response.data;
+  },
+
   async getExpenseAnalytics(filters?: {
     startDate?: Date;
     endDate?: Date;
-    groupBy?: 'category' | 'status' | 'user' | 'month';
+    groupBy?: 'category' | 'status' | 'user' | 'team' | 'month';
+    teamId?: string;
+    currency?: string;
   }) {
     const response = await axiosInstance.get('/reimbursements/analytics', {
       params: filters,
@@ -140,22 +165,36 @@ export const reimbursementService = {
     return response.data;
   },
 
-  async exportReimbursements(format: 'csv' | 'excel', filters?: {
+  async getBudgetStatus(filters?: {
+    teamId?: string;
+    userId?: string;
+    period?: 'month' | 'quarter' | 'year';
+    currency?: string;
+  }) {
+    const response = await axiosInstance.get('/reimbursements/budget', {
+      params: filters,
+    });
+    return response.data;
+  },
+
+  async exportReimbursements(format: 'csv' | 'excel' | 'pdf', filters?: {
     status?: ReimbursementStatus;
     category?: ExpenseCategory;
     startDate?: Date;
     endDate?: Date;
+    teamId?: string;
+    currency?: string;
   }) {
     const response = await axiosInstance.get(`/reimbursements/export/${format}`, {
       params: filters,
       responseType: 'blob',
     });
     
-    // Create a download link
+    const fileName = `reimbursements_${new Date().toISOString().split('T')[0]}.${format}`;
     const url = window.URL.createObjectURL(new Blob([response.data]));
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `reimbursements.${format}`);
+    link.setAttribute('download', fileName);
     document.body.appendChild(link);
     link.click();
     link.remove();
